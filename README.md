@@ -1,4 +1,4 @@
-# Nginx Docker Ansible Playbook
+# Ansible Playbook to deploy Nginx with Certbot
 
 This Ansible playbook deploys Nginx with Docker Compose, includes Certbot for SSL certificate management, and provides comprehensive configuration options for multiple domains.
 
@@ -22,13 +22,13 @@ This Ansible playbook deploys Nginx with Docker Compose, includes Certbot for SS
 - Ubuntu 18.04+ server
 - Ansible 2.9+
 - SSH access to target server
-- Domain names pointing to your server
+- Domain names pointing to your server (optional, can use nip.io)
 
 ## Installation
 
 1. Clone this repository:
 ```bash
-git clone <repository-url>
+git clone git@github.com:sferatime/test_task_01.git
 cd test_task_01
 ```
 
@@ -99,15 +99,6 @@ certbot_email: "admin@example.com"  # Email for SSL certificates
 certbot_staging: false              # Use staging environment for testing
 ```
 
-### Nginx Configuration
-
-```yaml
-nginx_worker_processes: "auto"      # Number of worker processes
-nginx_worker_connections: 1024      # Connections per worker
-nginx_keepalive_timeout: 65         # Keep-alive timeout
-nginx_client_max_body_size: "100M"  # Max upload size
-```
-
 ## Usage
 
 ### Deploy the entire stack:
@@ -129,6 +120,23 @@ ansible-playbook -i inventory.ini site.yml --check
 ```bash
 ansible-playbook -i inventory.ini site.yml -v
 ```
+
+## Testing with Docker Compose
+
+For testing purposes, you can also run the services directly with Docker Compose without using Ansible:
+
+
+### 1. Start services with Docker Compose:
+```bash
+sudo docker-compose up --build
+```
+
+### 5. Stop services:
+```bash
+sudo docker-compose down
+```
+
+**Note**: When using Docker Compose directly, disable docker role in dependencies in the file roles/nginx/meta/main.yaml (Because testing set already includes dind)
 
 ## File Structure
 
@@ -224,7 +232,6 @@ docker logs -f certbot
 - Basic authentication per domain
 - SSL/TLS 1.2+ only
 - Secure cipher suites
-- **Containerized logging** (no log files on host)
 
 ## Troubleshooting
 
