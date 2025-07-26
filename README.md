@@ -227,8 +227,6 @@ docker logs -f certbot
 ## Security Features
 
 - HTTP to HTTPS redirects
-- HSTS headers
-- Security headers (X-Frame-Options, X-XSS-Protection, etc.)
 - Basic authentication per domain
 - SSL/TLS 1.2+ only
 - Secure cipher suites
