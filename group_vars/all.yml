@@ -40,7 +40,13 @@ domains:
 
 # Certbot settings
 certbot_email: "sferatime@naver.com"
-certbot_staging: true # Set to true for testing
+certbot_staging: false # Set to true for testing
 
 # Docker Compose settings
-docker_compose_restart_policy: "unless-stopped" 
+docker_compose_restart_policy: "unless-stopped"
+
+# Nginx settings
+nginx_worker_processes: "auto"
+nginx_worker_connections: 1024
+nginx_keepalive_timeout: 65
+nginx_client_max_body_size: "100M" 
