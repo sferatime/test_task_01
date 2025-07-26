@@ -1,0 +1,20 @@
+---
+galaxy_info:
+  author: Ansible Playbook
+  description: Nginx reverse proxy with SSL and basic auth support
+  company: 
+  license: MIT
+  min_ansible_version: 2.9
+  platforms:
+    - name: Ubuntu
+      versions:
+        - all
+  galaxy_tags:
+    - nginx
+    - ssl
+    - certbot
+    - reverse-proxy
+    - basic-auth
+
+dependencies:
+  - role: docker 

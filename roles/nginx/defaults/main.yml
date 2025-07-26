@@ -1,0 +1,14 @@
+---
+# Docker and Docker Compose settings
+nginx_image: "nginx:alpine"
+certbot_image: "certbot/certbot:latest"
+
+# Domain configuration defaults
+domains: []
+
+# Certbot settings
+certbot_email: "admin@example.com"
+certbot_staging: false
+
+# Docker Compose settings
+docker_compose_restart_policy: "unless-stopped" 

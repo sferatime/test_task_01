@@ -1,0 +1,35 @@
+version: "3.8"
+
+services:
+  dind:
+    build: ./.devcontainer/dind
+    container_name: dind
+    privileged: true
+    volumes:
+      - ./.devcontainer/dind/ssh_keys:/ssh
+    networks:
+      - demo-net
+    ports:
+      - "80:80"
+
+  ansible:
+    build: ./.devcontainer/ansible
+    container_name: ansible
+    depends_on:
+      - dind
+    volumes:
+      - ./.devcontainer/dind/ssh_keys:/ssh:ro
+      - ./.devcontainer/inventory.ini:/ansible/inventory.ini:ro
+      - ./site.yml:/ansible/playbook.yml:ro
+      - ./group_vars:/ansible/group_vars:ro
+      - ./ansible.cfg:/ansible/ansible.cfg:ro
+      - ./roles:/ansible/roles
+    working_dir: /ansible
+    networks:
+      - demo-net
+    command: >
+      ansible-playbook playbook.yml
+
+networks:
+  demo-net:
+    driver: bridge

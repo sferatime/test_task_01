@@ -1,0 +1,119 @@
+# Sample configuration for multiple domains
+# Copy this to group_vars/all.yml and customize for your needs
+
+# Docker and Docker Compose settings
+docker_compose_version: "2.20.0"
+nginx_image: "nginx:alpine"
+certbot_image: "certbot/certbot:latest"
+
+# Domain configuration examples
+domains:
+  # Example 1: Main website with SSL and basic auth
+  - domain: "example.com"
+    locations:
+      - path: "/"
+        proxy_pass: "http://web-app:8080"
+        proxy_set_header: "Host $host"
+        proxy_set_header: "X-Real-IP $remote_addr"
+        proxy_set_header: "X-Forwarded-For $proxy_add_x_forwarded_for"
+        proxy_set_header: "X-Forwarded-Proto $scheme"
+      - path: "/api"
+        proxy_pass: "http://api-service:3000"
+        proxy_set_header: "Host $host"
+        proxy_set_header: "X-Real-IP $remote_addr"
+      - path: "/static"
+        alias: "/var/www/static"
+        expires: "30d"
+        add_header: "Cache-Control public"
+    enable_ssl: true
+    redirect_http_to_https: true
+    basic_auth:
+      enabled: true
+      username: "admin"
+      password: "secure_password_123"
+    robots_txt: |
+      User-agent: *
+      Disallow: /admin/
+      Disallow: /private/
+      Allow: /
+      Sitemap: https://example.com/sitemap.xml
+
+  # Example 2: API subdomain without basic auth
+  - domain: "api.example.com"
+    locations:
+      - path: "/"
+        proxy_pass: "http://api-service:3000"
+        proxy_set_header: "Host $host"
+        proxy_set_header: "X-Real-IP $remote_addr"
+        proxy_set_header: "X-Forwarded-For $proxy_add_x_forwarded_for"
+        proxy_set_header: "X-Forwarded-Proto $scheme"
+        proxy_read_timeout: "300"
+        proxy_connect_timeout: "75"
+      - path: "/health"
+        proxy_pass: "http://health-check:8080"
+        proxy_set_header: "Host $host"
+    enable_ssl: true
+    redirect_http_to_https: true
+    basic_auth:
+      enabled: false
+      username: "api_user"
+      password: "api_password"
+    robots_txt: |
+      User-agent: *
+      Disallow: /
+
+  # Example 3: Development environment (HTTP only)
+  - domain: "dev.example.com"
+    locations:
+      - path: "/"
+        proxy_pass: "http://dev-app:8080"
+        proxy_set_header: "Host $host"
+        proxy_set_header: "X-Real-IP $remote_addr"
+      - path: "/debug"
+        proxy_pass: "http://debug-service:4000"
+        proxy_set_header: "Host $host"
+    enable_ssl: false
+    redirect_http_to_https: false
+    basic_auth:
+      enabled: true
+      username: "dev_user"
+      password: "dev_password"
+    robots_txt: |
+      User-agent: *
+      Disallow: /
+
+  # Example 4: Static file server
+  - domain: "static.example.com"
+    locations:
+      - path: "/"
+        root: "/var/www/static"
+        index: "index.html"
+        try_files: "$uri $uri/ /index.html"
+        expires: "1y"
+        add_header: "Cache-Control public"
+      - path: "/images"
+        alias: "/var/www/images"
+        expires: "30d"
+        add_header: "Cache-Control public"
+    enable_ssl: true
+    redirect_http_to_https: true
+    basic_auth:
+      enabled: false
+      username: "static_user"
+      password: "static_password"
+    robots_txt: |
+      User-agent: *
+      Allow: /
+
+# Certbot settings
+certbot_email: "admin@example.com"
+certbot_staging: false  # Set to true for testing
+
+# Nginx settings
+nginx_worker_processes: "auto"
+nginx_worker_connections: 1024
+nginx_keepalive_timeout: 65
+nginx_client_max_body_size: "100M"
+
+# Docker Compose settings
+docker_compose_restart_policy: "unless-stopped" 

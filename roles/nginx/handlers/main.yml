@@ -1,0 +1,17 @@
+---
+- name: reload nginx
+  shell: |
+    docker exec nginx nginx -s reload
+  become: true
+
+- name: restart nginx
+  community.docker.docker_container:
+    name: nginx
+    state: restarted
+  become: true
+
+- name: restart certbot
+  community.docker.docker_container:
+    name: certbot
+    state: restarted
+  become: true 

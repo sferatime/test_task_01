@@ -1,0 +1,8 @@
+// .devcontainer/ansible/devcontainer.json
+{
+    "name": "Ansible Container",
+    "dockerComposeFile": ["../../docker-compose.yml"],
+    "service": "ansible",
+    "shutdownAction": "none",
+    "workspaceFolder": "/ansible"
+}

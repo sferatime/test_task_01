@@ -1,0 +1,46 @@
+# Global variables for nginx and certbot configuration
+
+# Docker and Docker Compose settings
+docker_compose_version: "2.20.0"
+nginx_image: "nginx:alpine"
+certbot_image: "certbot/certbot:latest"
+
+# Domain configuration
+domains:
+  - domain: "{{ public_ipv4 }}.nip.io"
+    locations:
+      - path: "/"
+        proxy_pass: "https://google.com/"
+        proxy_set_header: "Host $host"
+    enable_ssl: true
+    redirect_http_to_https: true
+    basic_auth:
+      enabled: false
+      username: "admin"
+      password: "password123"
+    robots_txt: |
+      User-agent: *
+      Disallow: /admin/
+      Allow: /
+  
+  # - domain: "api.example.com"
+  #   locations:
+  #     - path: "/"
+  #       proxy_pass: "http://api:3000"
+  #       proxy_set_header: "Host $host"
+  #   enable_ssl: true
+  #   redirect_http_to_https: true
+  #   basic_auth:
+  #     enabled: true
+  #     username: "api_user"
+  #     password: "api_password123"
+  #   robots_txt: |
+  #     User-agent: *
+  #     Disallow: /
+
+# Certbot settings
+certbot_email: "sferatime@naver.com"
+certbot_staging: true # Set to true for testing
+
+# Docker Compose settings
+docker_compose_restart_policy: "unless-stopped" 

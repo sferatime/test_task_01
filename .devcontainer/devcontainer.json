@@ -1,0 +1,13 @@
+{
+  "name": "Ansible + Dind DevContainer",
+  "dockerComposeFile": ["../docker-compose.yml"],
+  "service": "ansible",                // VS Code will attach here
+  "workspaceFolder": "/ansible",       // where your playbooks live
+  "runServices": ["dind"],           // also start the Dind container
+  "shutdownAction": "stopCompose",     // tears down both when you close
+  "extensions": [
+    "ms-vscode-remote.remote-containers",
+    "ms-azuretools.vscode-docker",
+    "ms-python.python"
+  ]
+}

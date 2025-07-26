@@ -1,0 +1,153 @@
+---
+- name: Lookup public IPv4 via ipify
+  uri:
+    url: https://api.ipify.org?format=json
+    return_content: yes
+    validate_certs: yes
+  register: ipify_result
+
+- name: Set public_ipv4 with public IP
+  set_fact:
+    public_ipv4: "{{ ipify_result.json.ip }}"
+
+- name: Install apache2-utils for htpasswd
+  apt:
+    name: apache2-utils
+    state: present
+    update_cache: true
+  become: true
+
+- name: Create nginx configuration directory
+  file:
+    path: "{{ item }}"
+    state: directory
+    mode: '0755'
+  loop:
+    - /opt/nginx
+    - /opt/nginx/conf.d
+    - /opt/nginx/ssl
+    - /opt/nginx/logs
+    - /opt/nginx/www/certbot
+  become: true
+
+- name: Create SSL directories for each domain
+  file:
+    path: "/opt/nginx/ssl/{{ item.domain }}"
+    state: directory
+    mode: '0755'
+  loop: "{{ domains | selectattr('enable_ssl', 'equalto', true) | list }}"
+  become: true
+  when: item.enable_ssl
+
+- name: Copy nginx configuration files
+  template:
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
+    mode: "{{ item.mode }}"
+  loop:
+    - { src: 'docker-compose.yml.j2', dest: '/opt/nginx/docker-compose.yml', mode: '0644' }
+    - { src: '99-autoreload.sh.j2', dest: '/opt/nginx/99-autoreload.sh', mode: '0755' }
+  become: true
+  notify: reload nginx
+
+- name: Generate domain-specific nginx configurations
+  template:
+    src: domain.conf.j2
+    dest: "/opt/nginx/conf.d/{{ item.domain }}.conf"
+    mode: '0644'
+  loop: "{{ domains }}"
+  become: true
+  notify: reload nginx
+
+- name: Create folder for each domain
+  file:
+    path: "/opt/nginx/www/{{ item.domain }}"
+    state: directory
+    mode: '0777'
+  loop: "{{ domains }}"
+  become: true
+
+- name: Create robots.txt files
+  copy:
+    content: "{{ item.robots_txt }}"
+    dest: "/opt/nginx/www/{{ item.domain }}/robots.txt"
+    mode: '0644'
+  loop: "{{ domains }}"
+  become: true
+
+- name: Create basic auth files
+  shell: |
+    htpasswd -bc /opt/nginx/conf/{{ item.domain }}.htpasswd {{ item.basic_auth.username }} {{ item.basic_auth.password }}
+  loop: "{{ domains | selectattr('basic_auth.enabled', 'equalto', true) | list }}"
+  become: true
+  when: item.basic_auth.enabled
+  notify: reload nginx
+
+- name: Generate dummy SSL certificates for domains
+  shell: |
+    mkdir -p /opt/nginx/ssl/{{ item.domain }}
+    openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
+      -keyout /opt/nginx/ssl/{{ item.domain }}/privkey.pem \
+      -out /opt/nginx/ssl/{{ item.domain }}/fullchain.pem \
+      -subj "/C=US/ST=State/L=City/O=Organization/CN={{ item.domain }}"
+  loop: "{{ domains | selectattr('enable_ssl', 'equalto', true) | list }}"
+  become: true
+  when: item.enable_ssl
+
+- name: Start nginx and certbot containers
+  community.docker.docker_compose_v2:
+    project_src: /opt/nginx
+    state: present
+  become: true
+
+- name: Wait for nginx to be ready
+  wait_for:
+    port: 80
+    timeout: 30
+  become: true
+
+- name: Issue SSL certificates
+  shell: |
+    timeout 60 docker exec certbot certbot certonly \
+      --webroot \
+      --webroot-path=/var/www/certbot \
+      --email {{ certbot_email }} \
+      --agree-tos \
+      --no-eff-email \
+      --non-interactive \
+      --force-renewal \
+      {% if certbot_staging %}--staging{% endif %} \
+      -d {{ item.domain }}
+  loop: "{{ domains | selectattr('enable_ssl', 'equalto', true) | list }}"
+  become: true
+  when: item.enable_ssl
+  ignore_errors: yes
+  register: certbot_result
+
+- name: Update SSL certificate paths to use real certificates
+  replace:
+    path: "/opt/nginx/conf.d/{{ item.item.domain }}.conf"
+    regexp: '/etc/nginx/ssl/{{ item.item.domain }}/'
+    replace: '/etc/letsencrypt/live/{{ item.item.domain }}/'
+  loop: "{{ certbot_result.results }}"
+  become: true
+  when: item.rc == 0
+  notify: reload nginx
+
+- name: Display deployment summary
+  debug:
+    msg: |
+      Nginx deployment completed!
+      
+      Domains configured:
+      {% for domain in domains %}
+      - {{ domain.domain }}
+        - SSL: {{ "Enabled" if domain.enable_ssl else "Disabled" }}
+        - Basic Auth: {{ "Enabled" if domain.basic_auth.enabled else "Disabled" }}
+        - Locations: {{ domain.locations | length }}
+      {% endfor %}
+      
+      Access your domains at:
+      {% for domain in domains %}
+      - http{% if domain.enable_ssl %}s{% endif %}://{{ domain.domain }}
+      {% endfor %} 

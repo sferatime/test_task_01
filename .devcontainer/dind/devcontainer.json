@@ -1,0 +1,8 @@
+// .devcontainer/dind/devcontainer.json
+{
+    "name": "Dind Container",
+    "dockerComposeFile": ["../../docker-compose.yml"],
+    "service": "dind",
+    "shutdownAction": "none",
+    "workspaceFolder": "/workspace"
+}

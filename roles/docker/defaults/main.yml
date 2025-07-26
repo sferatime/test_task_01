@@ -1,0 +1,10 @@
+---
+# Docker version to install (latest stable)
+docker_version: "latest"
+
+# Docker Compose version
+docker_compose_version: "2.20.0"
+
+# Docker repository settings
+docker_repository: "deb [arch=amd64] https://download.docker.com/linux/ubuntu"
+docker_gpg_key: "https://download.docker.com/linux/ubuntu/gpg" 

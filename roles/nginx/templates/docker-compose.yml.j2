@@ -1,0 +1,41 @@
+version: '3.8'
+
+services:
+  nginx:
+    image: {{ nginx_image }}
+    container_name: nginx
+    restart: {{ docker_compose_restart_policy }}
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - /opt/nginx/conf.d:/etc/nginx/conf.d:ro
+      - /opt/nginx/www:/var/www
+      - /opt/nginx/ssl:/etc/nginx/ssl:ro
+      - /opt/nginx/99-autoreload.sh:/docker-entrypoint.d/99-autoreload.sh
+      - certbot-etc:/etc/letsencrypt:ro
+      - certbot-var:/var/lib/letsencrypt:ro
+    depends_on:
+      - certbot
+    networks:
+      - nginx-network
+
+  certbot:
+    image: {{ certbot_image }}
+    container_name: certbot
+    restart: {{ docker_compose_restart_policy }}
+    volumes:
+      - certbot-etc:/etc/letsencrypt
+      - certbot-var:/var/lib/letsencrypt
+      - /opt/nginx/www:/var/www
+    networks:
+      - nginx-network
+    entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew; sleep 12h & wait $${!}; done;'"  # Renew certificates every 12 hours
+
+volumes:
+  certbot-etc:
+  certbot-var:
+
+networks:
+  nginx-network:
+    driver: bridge 
